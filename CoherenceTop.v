@@ -5,6 +5,7 @@ Require Import Coq.MSets.MSetInterface.
 Require Import Arith.
 Require Import Setoid.
 Require Import Program.Equality.
+Require Import TypingFlags.Loader.
 
 Module CoherenceTop
        (Import VarTyp : BooleanDecidableType')
@@ -209,6 +210,9 @@ Definition OrthoS (A B: PTyp) := forall C, sub A C -> sub B C -> (TopLike A B C)
 
 (* Disjointness: Implementation *)
 
+Set Guard Checking.
+Print Typing Flags.
+
 Inductive Ortho : PTyp -> PTyp -> Prop :=
   | OTop : forall t1, Ortho t1 TopT
   | OTop1 : forall t1, Ortho TopT t1
@@ -217,7 +221,7 @@ Inductive Ortho : PTyp -> PTyp -> Prop :=
   | OIntFun : forall t1 t2, Ortho PInt (Fun t1 t2)
   | OFunInt : forall t1 t2, Ortho (Fun t1 t2) PInt
   | OFun   : forall t1 t2 t3 t4, Ortho t2 t4 -> Ortho (Fun t1 t2) (Fun t3 t4)
-  | OFunA  : forall t1 t2 t3 t4, Ortho t1 t3 -> Ortho (Fun t1 t2) (Fun t3 t4).
+  | OFunA  : forall t1 t2 t3 t4, Ortho t1 t3-> not (sub t2 t4) -> not (sub t4 t2) -> Ortho (Fun t1 t2) (Fun t3 t4).
 
 Hint Resolve OTop OTop1 OAnd1 OAnd2 OIntFun OFunInt OFun OFunA.
 
@@ -318,6 +322,11 @@ Admitted.
 
 (* Disjointness algorithm is complete: Theorem 8 *)
 
+(*Lemma ortho_func : forall t1 t2, WFTyp t1 -> forall t3 t4, WFTyp t2 ->
+      OrthoS (Fun t1 t2) (Fun t3 t4) -> Ortho t1 t3 \/ Ortho t2 t4.
+Proof.
+intros. left. unfold OrthoS in H1.*)
+
 Lemma ortho_completness : forall t1, WFTyp t1 -> forall t2, WFTyp t2 -> OrthoS t1 t2 -> Ortho t1 t2.
 Proof.
 intros t1 wft1.
@@ -337,7 +346,7 @@ apply OTop.
 induction H.
 apply OFunInt.
 (* Case Fun t1 t2 | Fun t0 t3 *)
-apply OFun. 
+apply OFunA.
 apply IHwft1_2. auto.
 unfold OrthoS.
 intros.
