@@ -126,6 +126,10 @@ Inductive TopLike : PTyp -> PTyp -> PTyp -> Prop :=
   | TLFunAnd : forall A B C D A1 A2, sub C (Fun A1 B) -> sub D (Fun A2 B) -> not (sub A1 A2) -> not (sub A2 A1) ->
    sub A (And A1 A2) -> TopLike C D (Fun A B).
 
+(*
+TLFunAnd states that output of two functions must be same and different input.
+*)
+
 Hint Resolve TLTop TLAnd TLFun TLFunAnd.
 
 
@@ -178,13 +182,68 @@ intros.
 apply sym_top_like. auto.
 Defined.
 
+Lemma toplike_and : forall A B C D, TopLike A C D -> TopLike B C D ->
+    TopLike (And A B) C D.
+Proof.
+intros.
+induction D; eauto.
+inversion H.
+apply TLFun.
+apply IHD2.
+inversion H; eauto.
+admit.
+admit.
+apply TLAnd; auto.
+apply IHD1.
+inversion H; auto.
+inversion H0; auto.
+apply IHD2.
+inversion H; auto.
+inversion H0; auto.
+Admitted.
+
+(*
+Counter Example for toplike_and and ortho_and:
+A = Int -> Int
+B = Int -> Int
+C = char -> Int
+D = Int & char -> Int
+
+toplike_and and ortho_and are not valid lemmas.
+
+*)
+
 Lemma ortho_and : forall {A B C}, OrthoS A C -> OrthoS B C -> OrthoS (And A B) C.
 Proof.
 intros.
 unfold OrthoS. intros.
-unfold OrthoS in *.
-induction C0.
-admit.
+dependent induction H1.
+ - apply TLAnd.
+   apply IHsub1; auto.
+   apply invAndS1 in H2. destruct H2. auto.
+   apply IHsub2; auto.
+   apply invAndS1 in H2. destruct H2. auto.
+ - unfold OrthoS in H.
+   unfold OrthoS in H0.
+   assert (TopLike A C t0); auto.
+   dependent induction H3; eauto.
+   apply TLAnd.
+   apply toplikeinv1; eauto.
+   apply H0; eauto. admit. apply invAndS1 in H2. destruct H2; auto.
+   apply toplikeinv1; eauto.
+   apply H0; eauto. admit. apply invAndS1 in H2. destruct H2; auto.
+   apply toplikeinv1.
+   apply H; eauto.
+   apply H0; eauto.
+   admit.
+ - unfold OrthoS in *.
+   apply toplikeinv1; eauto.
+   apply H; eauto.
+   assert (TopLike B C t0); eauto.
+  admit.
+ - apply TLTop.
+
+(*admit.
 apply TLFun.
 apply IHC0_2.
 apply SAnd2.
@@ -202,72 +261,138 @@ apply SAnd2.
 apply invAndS1 in H1. destruct H1.
 admit.
 apply invAndS1 in H2. destruct H2. auto.
-apply TLTop.
+apply TLTop.*)
 Admitted.
 
 Lemma applyOrthoS : forall {A B}, OrthoS A B -> forall C, sub A C -> sub B C -> TopLike A B C.
+Proof.
 intros. destruct H with (C:=C); auto.
 Defined.
 
+(*Lemma invTopLike {A B}: forall C, TopLike A B C -> OrthoS A B -> sub A C /\ sub B C.
+Proof.
+intros. split.
+ - dependent induction H; auto.
+  + assert (sub C B); auto.
+    unfold OrthoS in H0.
+  + dependent induction H.
+  + dependent induction H.
+    apply IHTopLike; auto. admit.
+    apply invAndS1 in H3. destruct H3.
+    inversion H. subst.
+    apply SFun; auto.
+    admit.
+    subst. apply SAnd2. admit.
+    subst. apply SAnd3. admit.
+  + inversion H.
+    apply SAnd1.
+    apply IHC1; auto.
+    apply IHC2; auto.
+ - dependent induction C; auto.
+  + dependent induction H.
+  + dependent induction H.
+    apply IHTopLike; auto. admit.
+    apply invAndS1 in H3. destruct H3.
+    inversion H0. subst.
+    apply SFun; auto.
+    admit.
+    subst. apply SAnd2. admit.
+    subst. apply SAnd3. admit.
+  + inversion H.
+    apply SAnd1.
+    apply IHC1; auto.
+    apply IHC2; auto.
+Admitted.*)
+
 Lemma invOrthos: forall t1 t2 t3, OrthoS t1 (And t2 t3) -> OrthoS t1 t2 /\ OrthoS t1 t3.
 intros. split.
-unfold OrthoS. intros.
-unfold OrthoS in H.
-assert (TopLike t1 (And t2 t3) C).
-apply H; auto.
-induction H2; eauto.
-apply TLAnd.
-apply IHTopLike1; auto.
-apply invAndS1 in H0. destruct H0. auto.
-apply invAndS1 in H1. destruct H1. auto.
-apply IHTopLike2; auto.
-apply invAndS1 in H0. destruct H0. auto.
-apply invAndS1 in H1. destruct H1. auto.
-eapply TLFun.
-apply IHTopLike; eauto.
-admit. admit.
-eapply TLFunAnd with (A1:=A1) (A2:=A2); auto.
-apply invAndS1 in H6. destruct H6.
-admit.
-unfold OrthoS. intros.
-unfold OrthoS in H.
-assert (TopLike t1 (And t2 t3) C).
-apply H; auto.
-induction H2; eauto.
-apply TLAnd.
-apply IHTopLike1; auto.
-apply invAndS1 in H0. destruct H0. auto.
-apply invAndS1 in H1. destruct H1. auto.
-apply IHTopLike2; auto.
-apply invAndS1 in H0. destruct H0. auto.
-apply invAndS1 in H1. destruct H1. auto.
-apply TLFun; eauto.
-apply IHTopLike; auto.
-admit. admit.
-eapply TLFunAnd with (A1:=A1) (A2:=A2); auto.
-apply invAndS1 in H6. destruct H6.
-admit.
+ - unfold OrthoS. intros.
+   unfold OrthoS in H.
+   assert (TopLike t1 (And t2 t3) C).
+   apply H; auto.
+   dependent induction H2; eauto.
+    + apply TLAnd.
+      eapply IHTopLike1; auto.
+      apply invAndS1 in H0. destruct H0. auto.
+      apply invAndS1 in H1. destruct H1. auto.
+      eapply IHTopLike2; auto.
+      apply invAndS1 in H0. destruct H0. auto.
+      apply invAndS1 in H1. destruct H1. auto.
+    + eapply TLFun.
+      assert (TopLike C (And t2 t3) (Fun A B)); eauto.
+      eapply IHTopLike; eauto.
+      admit.
+      admit.
+    + eapply TLFunAnd with (A1:=A1) (A2:=A2); eauto.
+      admit.
+ - unfold OrthoS. intros.
+   unfold OrthoS in H.
+   assert (TopLike t1 (And t2 t3) C).
+   apply H; auto.
+   dependent induction H2; eauto.
+   + apply TLAnd.
+     eapply IHTopLike1; auto.
+     apply invAndS1 in H0. destruct H0. auto.
+     apply invAndS1 in H1. destruct H1. auto.
+     eapply IHTopLike2; auto.
+     apply invAndS1 in H0. destruct H0. auto.
+     apply invAndS1 in H1. destruct H1. auto.
+    + apply TLFun; eauto.
+      eapply IHTopLike; auto.
+      admit. admit.
+    + eapply TLFunAnd with (A1:=A1) (A2:=A2); auto.
+      admit.
 Admitted.
 
 (* Disjointness algorithm is complete: Theorem 8 *)
 
-Lemma orthos_func : forall t1 t2 t3 t4, WFTyp t1 -> WFTyp t3 -> WFTyp t2 -> WFTyp t4 ->
+Lemma ortho_func {t1 t2 t3 t4} :
+      Ortho (Fun t1 t2) (Fun t3 t4) -> Ortho t1 t3 \/ Ortho t2 t4.
+Proof.
+intros.
+inversion H.
+right. auto.
+left. auto.
+Qed.
+
+(*
+I think ortho_func is not correct. We may need to update
+TopLike or the definition of ortho_func.
+We have a rule which says input should be different.
+But we do not have a rule for output types.
+*)
+
+Lemma orthos_func {t1 t2 t3 t4} : WFTyp t1 -> WFTyp t3 -> WFTyp t2 -> WFTyp t4 ->
       OrthoS (Fun t1 t2) (Fun t3 t4) -> OrthoS t1 t3 \/ OrthoS t2 t4.
 Proof.
-intros. unfold OrthoS in H.
-unfold OrthoS. right. intros.
-unfold OrthoS in H3.
-dependent induction C; auto.
-admit.
-apply TLFun.
-apply IHC2. admit. admit.
-apply TLAnd.
-apply IHC1.
-apply invAndS1 in H4. destruct H4; auto.
-apply invAndS1 in H5. destruct H5; auto.
-apply IHC2.
-apply invAndS1 in H4. destruct H4; auto.
-apply invAndS1 in H5. destruct H5; auto.
+intros.
+ - unfold OrthoS. right. intros.
+   unfold OrthoS in H3.
+   dependent induction C.
+ + specialize (H3 (Fun (And t1 t3) PInt)).
+  assert (TopLike (Fun t1 t2) (Fun t3 t4) (Fun (And t1 t3) PInt)).
+  apply H3; eauto.
+  dependent induction H6; eauto.
+  dependent destruction H6.
+  dependent destruction H9.
+  dependent destruction H6.
+  admit.
+(* We can never prove that Int is TopLike *)
+  + unfold OrthoS in H3.
+    apply TLFun.
+    apply IHC2.
+    assert (TopLike (Fun t1 t2) (Fun t3 t4) (Fun (And t1 t3) ((Fun C1 C2)))).
+    apply H3; eauto.
+    admit.
+    admit.
+  + apply TLAnd.
+    apply IHC1.
+    apply invAndS1 in H4; destruct H4; auto.
+    apply invAndS1 in H5; destruct H5; auto.
+    apply IHC2.
+    apply invAndS1 in H4; destruct H4; auto.
+    apply invAndS1 in H5; destruct H5; auto.
+  + apply TLTop.
 Admitted. 
 
 Lemma ortho_completness : forall t1, WFTyp t1 -> forall t2, WFTyp t2 -> OrthoS t1 t2 -> Ortho t1 t2.
